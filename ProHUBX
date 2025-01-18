@@ -1,0 +1,125 @@
+local frame = script.Parent
+local buttons = {}
+local isDragging = false
+local draggedButton = nil
+local dragStart, buttonStart
+local flying = false
+local flySpeed = 50
+local flyConnection
+
+local function createButtons()
+    local buttonWidth, buttonHeight = 100, 50
+    local padding = 10
+    local functions = {
+        {name = "ESP", callback = function()
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    for _, part in pairs(player.Character:GetDescendants()) do
+                        if part:IsA("BasePart") and not part:FindFirstChild("ESPBox") then
+                            local box = Instance.new("BoxHandleAdornment")
+                            box.Name = "ESPBox"
+                            box.Adornee = part
+                            box.Size = part.Size
+                            box.Color3 = Color3.fromRGB(255, 0, 0)
+                            box.AlwaysOnTop = true
+                            box.ZIndex = 10
+                            box.Transparency = 0.5
+                            box.Parent = part
+                        end
+                    end
+                end
+            end
+        end},
+
+        {name = "Fly", callback = function()
+            flying = not flying
+            if flying then
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+                flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                    if flying then
+                        local moveDirection = Vector3.new(
+                            game.Players.LocalPlayer:GetMouse().Hit.LookVector.X,
+                            0,
+                            game.Players.LocalPlayer:GetMouse().Hit.LookVector.Z
+                        ).Unit
+                        humanoidRootPart.Velocity = moveDirection * flySpeed + Vector3.new(0, 10, 0)
+                    else
+                        humanoidRootPart.Velocity = Vector3.zero
+                    end
+                end)
+            else
+                if flyConnection then flyConnection:Disconnect() end
+            end
+        end},
+
+        {name = "Dex", callback = function()
+            loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Dex%20Explorer.txt"))()
+        end},
+
+        {name = "IY", callback = function()
+            loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Infinite%20Yield.txt"))()
+        end},
+    }
+
+    for i, func in ipairs(functions) do
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
+        button.Position = UDim2.new(0, (i - 1) * (buttonWidth + padding), 0, 0)
+        button.Text = func.name
+        button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextColor3 = Color3.fromRGB(0, 0, 0)
+        button.Font = Enum.Font.SourceSansBold
+        button.TextSize = 16
+        button.Parent = frame
+        table.insert(buttons, button)
+
+        local hoverTween
+        local tweenService = game:GetService("TweenService")
+
+        button.MouseEnter:Connect(function()
+            hoverTween = tweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(200, 200, 200)})
+            hoverTween:Play()
+        end)
+
+        button.MouseLeave:Connect(function()
+            if hoverTween then
+                hoverTween:Cancel()
+            end
+            local leaveTween = tweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)})
+            leaveTween:Play()
+        end)
+
+        button.MouseButton1Click:Connect(func.callback)
+    end
+end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        dragStart = input.Position
+        buttonStart = frame.Position
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            buttonStart.X.Scale,
+            buttonStart.X.Offset + delta.X,
+            buttonStart.Y.Scale,
+            buttonStart.Y.Offset + delta.Y
+        )
+    end
+end)
+
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+createButtons()
