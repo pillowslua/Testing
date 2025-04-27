@@ -1,125 +1,197 @@
-local frame = script.Parent
-local buttons = {}
-local isDragging = false
-local draggedButton = nil
-local dragStart, buttonStart
-local flying = false
-local flySpeed = 50
-local flyConnection
+local OnionUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourOnionUILinkHere"))() -- Thay bằng URL thực tế của Onion UI
+local Window = OnionUI:CreateWindow("CK Hub", "Chào mừng đến với CK Hub!")
+local Tab = Window:CreateTab("Tính năng chính")
+local SettingsTab = Window:CreateTab("Cài đặt")
 
-local function createButtons()
-    local buttonWidth, buttonHeight = 100, 50
-    local padding = 10
-    local functions = {
-        {name = "ESP", callback = function()
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer and player.Character then
-                    for _, part in pairs(player.Character:GetDescendants()) do
-                        if part:IsA("BasePart") and not part:FindFirstChild("ESPBox") then
-                            local box = Instance.new("BoxHandleAdornment")
-                            box.Name = "ESPBox"
-                            box.Adornee = part
-                            box.Size = part.Size
-                            box.Color3 = Color3.fromRGB(255, 0, 0)
-                            box.AlwaysOnTop = true
-                            box.ZIndex = 10
-                            box.Transparency = 0.5
-                            box.Parent = part
-                        end
-                    end
-                end
-            end
-        end},
+-- Dịch vụ
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
 
-        {name = "Fly", callback = function()
-            flying = not flying
-            if flying then
-                local player = game.Players.LocalPlayer
-                local character = player.Character or player.CharacterAdded:Wait()
-                local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+-- Biến trạng thái
+local ESPEnabled = false
+local FlyEnabled = false
+local InfiniteJumpEnabled = false
+local SpeedValue = 16
 
-                flyConnection = game:GetService("RunService").RenderStepped:Connect(function()
-                    if flying then
-                        local moveDirection = Vector3.new(
-                            game.Players.LocalPlayer:GetMouse().Hit.LookVector.X,
-                            0,
-                            game.Players.LocalPlayer:GetMouse().Hit.LookVector.Z
-                        ).Unit
-                        humanoidRootPart.Velocity = moveDirection * flySpeed + Vector3.new(0, 10, 0)
-                    else
-                        humanoidRootPart.Velocity = Vector3.zero
-                    end
-                end)
-            else
-                if flyConnection then flyConnection:Disconnect() end
-            end
-        end},
+-- Hàm kiểm tra nhân vật
+local function CheckCharacter()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
 
-        {name = "Dex", callback = function()
-            loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Dex%20Explorer.txt"))()
-        end},
-
-        {name = "IY", callback = function()
-            loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Infinite%20Yield.txt"))()
-        end},
-    }
-
-    for i, func in ipairs(functions) do
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
-        button.Position = UDim2.new(0, (i - 1) * (buttonWidth + padding), 0, 0)
-        button.Text = func.name
-        button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextColor3 = Color3.fromRGB(0, 0, 0)
-        button.Font = Enum.Font.SourceSansBold
-        button.TextSize = 16
-        button.Parent = frame
-        table.insert(buttons, button)
-
-        local hoverTween
-        local tweenService = game:GetService("TweenService")
-
-        button.MouseEnter:Connect(function()
-            hoverTween = tweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(200, 200, 200)})
-            hoverTween:Play()
-        end)
-
-        button.MouseLeave:Connect(function()
-            if hoverTween then
-                hoverTween:Cancel()
-            end
-            local leaveTween = tweenService:Create(button, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)})
-            leaveTween:Play()
-        end)
-
-        button.MouseButton1Click:Connect(func.callback)
+-- Chức năng ESP
+local function ESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = player.Character
+            highlight.FillColor = Color3.new(1, 0, 0) -- Màu đỏ
+            highlight.OutlineColor = Color3.new(1, 1, 1) -- Viền trắng
+            highlight.Name = "ESPHighlight"
+        end
     end
 end
 
-frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = true
-        dragStart = input.Position
-        buttonStart = frame.Position
+local function DisableESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character then
+            local highlight = player.Character:FindFirstChild("ESPHighlight")
+            if highlight then
+                highlight:Destroy()
+            end
+        end
+    end
+end
+
+-- Chức năng Speed
+local function SetSpeed(value)
+    if CheckCharacter() then
+        LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end
+end
+
+-- Chức năng Infinite Jump
+local function InfiniteJump()
+    UserInputService.JumpRequest:Connect(function()
+        if InfiniteJumpEnabled and CheckCharacter() then
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+end
+
+-- Chức năng Fling
+local function Fling()
+    local target = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            target = player.Character.HumanoidRootPart
+            break
+        end
+    end
+    if target and CheckCharacter() then
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyVelocity.Velocity = Vector3.new(0, 100, 0) -- Đẩy lên trời
+        bodyVelocity.Parent = target
+        wait(0.1)
+        bodyVelocity:Destroy()
+    end
+end
+
+-- Chức năng Fly
+local function Fly()
+    if CheckCharacter() then
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+        while FlyEnabled and CheckCharacter() do
+            local cam = workspace.CurrentCamera
+            local moveDir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                moveDir = moveDir + cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                moveDir = moveDir - cam.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                moveDir = moveDir + Vector3.new(0, 1, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                moveDir = moveDir - Vector3.new(0, 1, 0)
+            end
+            bodyVelocity.Velocity = moveDir * 50
+            RunService.RenderStepped:Wait()
+        end
+        bodyVelocity:Destroy()
+    end
+end
+
+-- Chức năng Teleport
+local function Teleport()
+    local target = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            target = player.Character.HumanoidRootPart
+            break
+        end
+    end
+    if target and CheckCharacter() then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.CFrame
+    end
+end
+
+-- Giao diện người dùng
+local ESPButton = Tab:CreateToggle("Bật ESP", false, function(state)
+    ESPEnabled = state
+    if state then
+        ESP()
+    else
+        DisableESP()
     end
 end)
 
-frame.InputChanged:Connect(function(input)
-    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        frame.Position = UDim2.new(
-            buttonStart.X.Scale,
-            buttonStart.X.Offset + delta.X,
-            buttonStart.Y.Scale,
-            buttonStart.Y.Offset + delta.Y
-        )
+local SpeedSlider = Tab:CreateSlider("Tốc độ", 16, 100, 16, function(value)
+    SpeedValue = value
+    SetSpeed(value)
+end)
+
+local InfiniteJumpButton = Tab:CreateToggle("Nhảy vô hạn", false, function(state)
+    InfiniteJumpEnabled = state
+    if state then
+        InfiniteJump()
     end
 end)
 
-frame.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = false
+local FlingButton = Tab:CreateButton("Fling người gần nhất", function()
+    Fling()
+end)
+
+local FlyButton = Tab:CreateToggle("Bay", false, function(state)
+    FlyEnabled = state
+    if state then
+        spawn(Fly)
     end
 end)
 
-createButtons()
+local TeleportButton = Tab:CreateButton("Dịch chuyển đến người gần nhất", function()
+    Teleport()
+end)
+
+-- Cài đặt bypass anticheat (cơ bản)
+local BypassToggle = SettingsTab:CreateToggle("Giảm phát hiện Anticheat", false, function(state)
+    if state then
+        -- Giảm thiểu hành vi bất thường
+        game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+            wait(1)
+            if SpeedValue > 50 then
+                SetSpeed(50) -- Giới hạn tốc độ để tránh phát hiện
+            end
+        end)
+    end
+end)
+
+-- Thông báo khởi động
+OnionUI:Notify("CK Hub", "Đã tải CK Hub thành công! Nhấn phím [Right Shift] để mở/tắt.", 5)
+
+-- Phím tắt để mở/tắt giao diện
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        Window:Toggle()
+    end
+end)
+
+-- Xử lý khi nhân vật tái sinh
+LocalPlayer.CharacterAdded:Connect(function()
+    wait(1)
+    if ESPEnabled then
+        ESP()
+    end
+    if SpeedValue > 16 then
+        SetSpeed(SpeedValue)
+    end
+    if FlyEnabled then
+        spawn(Fly)
+    end
+end)
