@@ -8,6 +8,8 @@ local LocalPlayer = Players.LocalPlayer
 local ESPEnabled = false
 local FlyEnabled = false
 local InfiniteJumpEnabled = false
+local SpinCameraEnabled = false
+local BringPlayersEnabled = false
 local SpeedValue = 16
 local GuiVisible = true
 
@@ -34,6 +36,32 @@ MainFrame.Visible = GuiVisible
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
+
+-- Kéo thả GUI
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+MainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -82,11 +110,12 @@ SettingsTab.BackgroundTransparency = 1
 SettingsTab.Parent = MainFrame
 SettingsTab.Visible = false
 
-local function CreateToggle(name, default, callback)
+-- Hàm tạo Toggle
+local function CreateToggle(name, default, callback, parent)
     local ToggleFrame = Instance.new("Frame")
     ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
     ToggleFrame.BackgroundTransparency = 1
-    ToggleFrame.Parent = MainTab
+    ToggleFrame.Parent = parent or MainTab
 
     local ToggleLabel = Instance.new("TextLabel")
     ToggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
@@ -108,6 +137,10 @@ local function CreateToggle(name, default, callback)
     ToggleButton.Font = Enum.Font.Gotham
     ToggleButton.Parent = ToggleFrame
 
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 5)
+    UICorner.Parent = ToggleButton
+
     ToggleButton.MouseButton1Click:Connect(function()
         default = not default
         ToggleButton.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
@@ -118,6 +151,7 @@ local function CreateToggle(name, default, callback)
     return ToggleFrame
 end
 
+-- Hàm tạo Slider
 local function CreateSlider(name, min, max, default, callback)
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -152,6 +186,10 @@ local function CreateSlider(name, min, max, default, callback)
     SliderButton.Text = ""
     SliderButton.Parent = SliderBar
 
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = SliderButton
+
     local dragging = false
     SliderButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -182,7 +220,8 @@ local function CreateSlider(name, min, max, default, callback)
     return SliderFrame
 end
 
-local function CreateButton(name, callback)
+-- Hàm tạo Button
+local function CreateButton(name, callback, parent)
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, -20, 0, 30)
     Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -190,7 +229,7 @@ local function CreateButton(name, callback)
     Button.TextColor3 = Color3.fromRGB(255, 255, 255)
     Button.TextSize = 14
     Button.Font = Enum.Font.Gotham
-    Button.Parent = MainTab
+    Button.Parent = parent or MainTab
     Button.MouseButton1Click:Connect(callback)
 
     local UICorner = Instance.new("UICorner")
@@ -213,6 +252,44 @@ SettingsTabButton.MouseButton1Click:Connect(function()
     SettingsTab.Visible = true
     MainTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     SettingsTabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
+
+-- Chức năng Bring Players
+local function BringPlayers()
+    if CheckCharacter() then
+        local centerPos = LocalPlayer.Character.HumanoidRootPart.Position
+        while BringPlayersEnabled do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(centerPos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
+                end
+            end
+            wait(0.1)
+        end
+    end
+end
+
+CreateToggle("Kéo tất cả người chơi", false, function(state)
+    BringPlayersEnabled = state
+    if state then
+        spawn(BringPlayers)
+    end
+end)
+
+-- Chức năng Spin Camera
+local function SpinCamera()
+    while SpinCameraEnabled do
+        local cam = workspace.CurrentCamera
+        cam.CFrame = cam.CFrame * CFrame.Angles(0, math.rad(5), 0)
+        RunService.RenderStepped:Wait()
+    end
+end
+
+CreateToggle("Xoay màn hình", false, function(state)
+    SpinCameraEnabled = state
+    if state then
+        spawn(SpinCamera)
+    end
 end)
 
 -- Chức năng ESP
@@ -343,7 +420,7 @@ CreateToggle("Giảm phát hiện Anticheat", false, function(state)
             end
         end)
     end
-end).Parent = SettingsTab
+end, SettingsTab)
 
 -- Phím tắt mở/tắt GUI
 UserInputService.InputBegan:Connect(function(input)
@@ -390,6 +467,9 @@ LocalPlayer.CharacterAdded:Connect(function()
                 bodyVelocity:Destroy()
             end
         end)
+    end
+    if BringPlayersEnabled then
+        spawn(BringPlayers)
     end
 end)
 
