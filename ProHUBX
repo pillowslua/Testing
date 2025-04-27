@@ -1,8 +1,3 @@
-local OnionUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourOnionUILinkHere"))() -- Thay bằng URL thực tế của Onion UI
-local Window = OnionUI:CreateWindow("CK Hub", "Chào mừng đến với CK Hub!")
-local Tab = Window:CreateTab("Tính năng chính")
-local SettingsTab = Window:CreateTab("Cài đặt")
-
 -- Dịch vụ
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -14,11 +9,211 @@ local ESPEnabled = false
 local FlyEnabled = false
 local InfiniteJumpEnabled = false
 local SpeedValue = 16
+local GuiVisible = true
 
 -- Hàm kiểm tra nhân vật
 local function CheckCharacter()
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
+
+-- Tạo GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CKHubGui"
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 400, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+MainFrame.Visible = GuiVisible
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Text = "CK Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
+
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(1, 0, 0, 30)
+TabContainer.Position = UDim2.new(0, 0, 0, 40)
+TabContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TabContainer.Parent = MainFrame
+
+local MainTabButton = Instance.new("TextButton")
+MainTabButton.Size = UDim2.new(0.5, 0, 1, 0)
+MainTabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MainTabButton.Text = "Tính năng chính"
+MainTabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainTabButton.TextSize = 14
+MainTabButton.Font = Enum.Font.Gotham
+MainTabButton.Parent = TabContainer
+
+local SettingsTabButton = Instance.new("TextButton")
+SettingsTabButton.Size = UDim2.new(0.5, 0, 1, 0)
+SettingsTabButton.Position = UDim2.new(0.5, 0, 0, 0)
+SettingsTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SettingsTabButton.Text = "Cài đặt"
+SettingsTabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SettingsTabButton.TextSize = 14
+SettingsTabButton.Font = Enum.Font.Gotham
+SettingsTabButton.Parent = TabContainer
+
+local MainTab = Instance.new("Frame")
+MainTab.Size = UDim2.new(1, -20, 1, -90)
+MainTab.Position = UDim2.new(0, 10, 0, 70)
+MainTab.BackgroundTransparency = 1
+MainTab.Parent = MainFrame
+
+local SettingsTab = Instance.new("Frame")
+SettingsTab.Size = UDim2.new(1, -20, 1, -90)
+SettingsTab.Position = UDim2.new(0, 10, 0, 70)
+SettingsTab.BackgroundTransparency = 1
+SettingsTab.Parent = MainFrame
+SettingsTab.Visible = false
+
+local function CreateToggle(name, default, callback)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
+    ToggleFrame.BackgroundTransparency = 1
+    ToggleFrame.Parent = MainTab
+
+    local ToggleLabel = Instance.new("TextLabel")
+    ToggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.Text = name
+    ToggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleLabel.TextSize = 14
+    ToggleLabel.Font = Enum.Font.Gotham
+    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    ToggleLabel.Parent = ToggleFrame
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0, 50, 0, 20)
+    ToggleButton.Position = UDim2.new(0.8, 0, 0.5, -10)
+    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    ToggleButton.Text = default and "Bật" or "Tắt"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 12
+    ToggleButton.Font = Enum.Font.Gotham
+    ToggleButton.Parent = ToggleFrame
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        default = not default
+        ToggleButton.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        ToggleButton.Text = default and "Bật" or "Tắt"
+        callback(default)
+    end)
+
+    return ToggleFrame
+end
+
+local function CreateSlider(name, min, max, default, callback)
+    local SliderFrame = Instance.new("Frame")
+    SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+    SliderFrame.BackgroundTransparency = 1
+    SliderFrame.Parent = MainTab
+
+    local SliderLabel = Instance.new("TextLabel")
+    SliderLabel.Size = UDim2.new(1, 0, 0, 20)
+    SliderLabel.BackgroundTransparency = 1
+    SliderLabel.Text = name .. ": " .. default
+    SliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SliderLabel.TextSize = 14
+    SliderLabel.Font = Enum.Font.Gotham
+    SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SliderLabel.Parent = SliderFrame
+
+    local SliderBar = Instance.new("Frame")
+    SliderBar.Size = UDim2.new(1, -20, 0, 10)
+    SliderBar.Position = UDim2.new(0, 10, 0, 30)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    SliderBar.Parent = SliderFrame
+
+    local SliderFill = Instance.new("Frame")
+    SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    SliderFill.Parent = SliderBar
+
+    local SliderButton = Instance.new("TextButton")
+    SliderButton.Size = UDim2.new(0, 20, 0, 20)
+    SliderButton.Position = UDim2.new((default - min) / (max - min), -10, 0, -5)
+    SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SliderButton.Text = ""
+    SliderButton.Parent = SliderBar
+
+    local dragging = false
+    SliderButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    SliderButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouseX = input.Position.X
+            local barX = SliderBar.AbsolutePosition.X
+            local barWidth = SliderBar.AbsoluteSize.X
+            local relativeX = math.clamp((mouseX - barX) / barWidth, 0, 1)
+            local value = min + (max - min) * relativeX
+            SliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+            SliderButton.Position = UDim2.new(relativeX, -10, 0, -5)
+            SliderLabel.Text = name .. ": " .. math.floor(value)
+            callback(value)
+        end
+    end)
+
+    return SliderFrame
+end
+
+local function CreateButton(name, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -20, 0, 30)
+    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Button.Text = name
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextSize = 14
+    Button.Font = Enum.Font.Gotham
+    Button.Parent = MainTab
+    Button.MouseButton1Click:Connect(callback)
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 5)
+    UICorner.Parent = Button
+
+    return Button
+end
+
+-- Chuyển tab
+MainTabButton.MouseButton1Click:Connect(function()
+    MainTab.Visible = true
+    SettingsTab.Visible = false
+    MainTabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    SettingsTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+end)
+
+SettingsTabButton.MouseButton1Click:Connect(function()
+    MainTab.Visible = false
+    SettingsTab.Visible = true
+    MainTabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    SettingsTabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
 
 -- Chức năng ESP
 local function ESP()
@@ -26,8 +221,8 @@ local function ESP()
         if player ~= LocalPlayer and player.Character then
             local highlight = Instance.new("Highlight")
             highlight.Parent = player.Character
-            highlight.FillColor = Color3.new(1, 0, 0) -- Màu đỏ
-            highlight.OutlineColor = Color3.new(1, 1, 1) -- Viền trắng
+            highlight.FillColor = Color3.fromRGB(1, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(1, 1, 1)
             highlight.Name = "ESPHighlight"
         end
     end
@@ -44,24 +239,37 @@ local function DisableESP()
     end
 end
 
+CreateToggle("Bật ESP", false, function(state)
+    ESPEnabled = state
+    if state then
+        ESP()
+    else
+        DisableESP()
+    end
+end)
+
 -- Chức năng Speed
-local function SetSpeed(value)
+CreateSlider("Tốc độ", 16, 100, 16, function(value)
+    SpeedValue = value
     if CheckCharacter() then
         LocalPlayer.Character.Humanoid.WalkSpeed = value
     end
-end
+end)
 
 -- Chức năng Infinite Jump
-local function InfiniteJump()
-    UserInputService.JumpRequest:Connect(function()
-        if InfiniteJumpEnabled and CheckCharacter() then
-            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end)
-end
+CreateToggle("Nhảy vô hạn", false, function(state)
+    InfiniteJumpEnabled = state
+    if state then
+        UserInputService.JumpRequest:Connect(function()
+            if InfiniteJumpEnabled and CheckCharacter() then
+                LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    end
+end)
 
 -- Chức năng Fling
-local function Fling()
+CreateButton("Fling người gần nhất", function()
     local target = nil
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -72,44 +280,47 @@ local function Fling()
     if target and CheckCharacter() then
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Velocity = Vector3.new(0, 100, 0) -- Đẩy lên trời
+        bodyVelocity.Velocity = Vector3.new(0, 100, 0)
         bodyVelocity.Parent = target
         wait(0.1)
         bodyVelocity:Destroy()
     end
-end
+end)
 
 -- Chức năng Fly
-local function Fly()
-    if CheckCharacter() then
+CreateToggle("Bay", false, function(state)
+    FlyEnabled = state
+    if state and CheckCharacter() then
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-        while FlyEnabled and CheckCharacter() do
-            local cam = workspace.CurrentCamera
-            local moveDir = Vector3.new(0, 0, 0)
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + cam.CFrame.LookVector
+        spawn(function()
+            while FlyEnabled and CheckCharacter() do
+                local cam = workspace.CurrentCamera
+                local moveDir = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveDir = moveDir + cam.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveDir = moveDir - cam.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    moveDir = moveDir + Vector3.new(0, 1, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    moveDir = moveDir - Vector3.new(0, 1, 0)
+                end
+                bodyVelocity.Velocity = moveDir * 50
+                RunService.RenderStepped:Wait()
             end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - cam.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                moveDir = moveDir + Vector3.new(0, 1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                moveDir = moveDir - Vector3.new(0, 1, 0)
-            end
-            bodyVelocity.Velocity = moveDir * 50
-            RunService.RenderStepped:Wait()
-        end
-        bodyVelocity:Destroy()
+            bodyVelocity:Destroy()
+        end)
     end
-end
+end)
 
 -- Chức năng Teleport
-local function Teleport()
+CreateButton("Dịch chuyển đến người gần nhất", function()
     local target = nil
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -120,65 +331,25 @@ local function Teleport()
     if target and CheckCharacter() then
         LocalPlayer.Character.HumanoidRootPart.CFrame = target.CFrame
     end
-end
+end)
 
--- Giao diện người dùng
-local ESPButton = Tab:CreateToggle("Bật ESP", false, function(state)
-    ESPEnabled = state
+-- Cài đặt bypass anticheat
+CreateToggle("Giảm phát hiện Anticheat", false, function(state)
     if state then
-        ESP()
-    else
-        DisableESP()
-    end
-end)
-
-local SpeedSlider = Tab:CreateSlider("Tốc độ", 16, 100, 16, function(value)
-    SpeedValue = value
-    SetSpeed(value)
-end)
-
-local InfiniteJumpButton = Tab:CreateToggle("Nhảy vô hạn", false, function(state)
-    InfiniteJumpEnabled = state
-    if state then
-        InfiniteJump()
-    end
-end)
-
-local FlingButton = Tab:CreateButton("Fling người gần nhất", function()
-    Fling()
-end)
-
-local FlyButton = Tab:CreateToggle("Bay", false, function(state)
-    FlyEnabled = state
-    if state then
-        spawn(Fly)
-    end
-end)
-
-local TeleportButton = Tab:CreateButton("Dịch chuyển đến người gần nhất", function()
-    Teleport()
-end)
-
--- Cài đặt bypass anticheat (cơ bản)
-local BypassToggle = SettingsTab:CreateToggle("Giảm phát hiện Anticheat", false, function(state)
-    if state then
-        -- Giảm thiểu hành vi bất thường
-        game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+        LocalPlayer.CharacterAdded:Connect(function(character)
             wait(1)
             if SpeedValue > 50 then
-                SetSpeed(50) -- Giới hạn tốc độ để tránh phát hiện
+                LocalPlayer.Character.Humanoid.WalkSpeed = 50
             end
         end)
     end
-end)
+end).Parent = SettingsTab
 
--- Thông báo khởi động
-OnionUI:Notify("CK Hub", "Đã tải CK Hub thành công! Nhấn phím [Right Shift] để mở/tắt.", 5)
-
--- Phím tắt để mở/tắt giao diện
+-- Phím tắt mở/tắt GUI
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightShift then
-        Window:Toggle()
+        GuiVisible = not GuiVisible
+        MainFrame.Visible = GuiVisible
     end
 end)
 
@@ -189,9 +360,58 @@ LocalPlayer.CharacterAdded:Connect(function()
         ESP()
     end
     if SpeedValue > 16 then
-        SetSpeed(SpeedValue)
+        LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
     end
     if FlyEnabled then
-        spawn(Fly)
+        spawn(function()
+            if CheckCharacter() then
+                local bodyVelocity = Instance.new("BodyVelocity")
+                bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+                while FlyEnabled and CheckCharacter() do
+                    local cam = workspace.CurrentCamera
+                    local moveDir = Vector3.new(0, 0, 0)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                        moveDir = moveDir + cam.CFrame.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                        moveDir = moveDir - cam.CFrame.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        moveDir = moveDir + Vector3.new(0, 1, 0)
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        moveDir = moveDir - Vector3.new(0, 1, 0)
+                    end
+                    bodyVelocity.Velocity = moveDir * 50
+                    RunService.RenderStepped:Wait()
+                end
+                bodyVelocity:Destroy()
+            end
+        end)
     end
 end)
+
+-- Thông báo khởi động
+local NotifyFrame = Instance.new("Frame")
+NotifyFrame.Size = UDim2.new(0, 200, 0, 50)
+NotifyFrame.Position = UDim2.new(1, -210, 0, 10)
+NotifyFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+NotifyFrame.Parent = ScreenGui
+
+local NotifyLabel = Instance.new("TextLabel")
+NotifyLabel.Size = UDim2.new(1, 0, 1, 0)
+NotifyLabel.BackgroundTransparency = 1
+NotifyLabel.Text = "CK Hub đã tải! Nhấn Right Shift để mở."
+NotifyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+NotifyLabel.TextSize = 14
+NotifyLabel.Font = Enum.Font.Gotham
+NotifyLabel.Parent = NotifyFrame
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 5)
+UICorner.Parent = NotifyFrame
+
+wait(5)
+NotifyFrame:Destroy()
